@@ -1,0 +1,119 @@
+{
+  "projectType": "api-service",
+  "projectName": "Sales Management System API",
+  "projectDescription": "A REST API for managing sales operations including products, clients, categories, and order processing with automatic stock management.",
+  "theme": "mint",
+  "primaryColor": "#2563eb",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/database-schema",
+              "concepts/architecture"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/configuration",
+              "guides/error-handling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview"
+            ]
+          },
+          {
+            "group": "Categories",
+            "pages": [
+              "api/categories/create",
+              "api/categories/list",
+              "api/categories/get",
+              "api/categories/delete"
+            ]
+          },
+          {
+            "group": "Products",
+            "pages": [
+              "api/products/create",
+              "api/products/list",
+              "api/products/get",
+              "api/products/update",
+              "api/products/delete"
+            ]
+          },
+          {
+            "group": "Clients",
+            "pages": [
+              "api/clients/create",
+              "api/clients/list",
+              "api/clients/get",
+              "api/clients/update",
+              "api/clients/delete"
+            ]
+          },
+          {
+            "group": "Sales",
+            "pages": [
+              "api/sales/create",
+              "api/sales/list",
+              "api/sales/get",
+              "api/sales/update",
+              "api/sales/delete"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Product inventory management with stock tracking",
+    "Client and category management",
+    "Sales order processing with automatic stock deduction",
+    "Data validation using Zod",
+    "Referential integrity with cascading operations",
+    "MySQL database integration"
+  ],
+  "publicApiSurface": [
+    "POST /categories",
+    "GET /categories",
+    "GET /categories/:id",
+    "DELETE /categories/:id",
+    "POST /products",
+    "GET /products",
+    "GET /products/:id",
+    "PATCH /products/:id",
+    "DELETE /products/:id",
+    "POST /clients",
+    "GET /clients",
+    "GET /clients/:id",
+    "PATCH /clients/:id",
+    "DELETE /clients/:id",
+    "POST /sales",
+    "GET /sales",
+    "GET /sales/:id",
+    "PATCH /sales/:id",
+    "DELETE /sales/:id"
+  ]
+}
