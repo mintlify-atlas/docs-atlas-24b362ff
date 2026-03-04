@@ -1,0 +1,88 @@
+---
+title: 'Create Category'
+api: 'POST /categories'
+description: 'Create a new category by providing a name'
+---
+
+## Endpoint
+
+```
+POST /categories
+```
+
+Creates a new category in the system. The category name must be unique and meet the validation requirements.
+
+## Request Body
+
+<ParamField body="name" type="string" required>
+  The name of the category to create.
+  
+  **Validation Rules:**
+  - Minimum length: 3 characters
+  - Must be a string
+  - Must be unique (cannot already exist)
+</ParamField>
+
+## Request Example
+
+```json
+{
+  "name": "bebidas"
+}
+```
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates whether an error occurred during the request.
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  A message describing the result of the operation.
+</ResponseField>
+
+### Success Response
+
+<ResponseExample>
+```json
+{
+  "error": false,
+  "msg": "categorie was created sucessfully"
+}
+```
+</ResponseExample>
+
+## Error Responses
+
+### Empty Request Body (400)
+
+Returned when no request body is provided.
+
+```json
+{
+  "error": true,
+  "msg": "request body is empty"
+}
+```
+
+### Invalid Category Name (400)
+
+Returned when the category name doesn't meet validation requirements (less than 3 characters).
+
+```json
+{
+  "error": true,
+  "msg": "categorie name is invalid"
+}
+```
+
+### Duplicate Category Name (409)
+
+Returned when a category with the same name already exists in the system.
+
+```json
+{
+  "error": true,
+  "msg": "categorie name exist"
+}
+```

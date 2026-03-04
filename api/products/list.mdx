@@ -1,0 +1,81 @@
+---
+title: 'List Products'
+api: 'GET /products'
+description: 'Retrieve a list of all products'
+---
+
+This endpoint returns an array containing all products in the system with their complete information.
+
+## Response
+
+Returns an array of product objects. Each product includes all fields from the database.
+
+<ResponseField name="id" type="string">
+  Product UUID identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Product name
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Product description
+</ResponseField>
+
+<ResponseField name="price" type="string">
+  Product price in decimal format (e.g., "3000.00")
+</ResponseField>
+
+<ResponseField name="stock" type="integer">
+  Available stock quantity
+</ResponseField>
+
+<ResponseField name="category_id" type="integer">
+  ID of the category this product belongs to
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the product was created (ISO 8601 format)
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  Timestamp when the product was last updated (ISO 8601 format)
+</ResponseField>
+
+## Response Example
+
+```json
+[
+  {
+    "id": "ad996ed3-14bb-11f1-9fcd-2418c6c96a00",
+    "name": "Pitusas",
+    "description": "Galletas de chocolate rellenas",
+    "price": "1200.00",
+    "stock": 90,
+    "category_id": 5,
+    "created_at": "2026-02-28T15:39:32.000Z",
+    "updated_at": "2026-02-28T15:39:32.000Z"
+  },
+  {
+    "id": "b6da7bbc-14b9-11f1-9fcd-2418c6c96a00",
+    "name": "Coca cola",
+    "description": "Bebida gasificada de 2ltr",
+    "price": "3000.00",
+    "stock": 40,
+    "category_id": 1,
+    "created_at": "2026-02-28T15:25:29.000Z",
+    "updated_at": "2026-02-28T15:25:29.000Z"
+  }
+]
+```
+
+## Error Responses
+
+### 409 - Conflict
+
+```json
+{
+  "error": true,
+  "msg": "Error message describing the issue"
+}
+```

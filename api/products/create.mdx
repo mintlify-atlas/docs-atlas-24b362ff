@@ -1,0 +1,99 @@
+---
+title: 'Create Product'
+api: 'POST /products'
+description: 'Create a new product with name, description, stock, price, and category'
+---
+
+This endpoint creates a new product in the system. All fields are required and must meet the validation requirements.
+
+## Request Body
+
+<ParamField body="name" type="string" required>
+  Product name. Must be at least 3 characters long.
+  
+  **Validation:** Minimum length of 3 characters
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Product description. Must be between 3 and 3000 characters.
+  
+  **Validation:** Minimum 3 characters, maximum 3000 characters
+</ParamField>
+
+<ParamField body="stock" type="integer" required>
+  Available stock quantity. Must be a non-negative integer.
+  
+  **Validation:** Integer, minimum value of 0
+</ParamField>
+
+<ParamField body="price" type="integer" required>
+  Product price. Must be a non-negative integer.
+  
+  **Validation:** Integer, minimum value of 0
+</ParamField>
+
+<ParamField body="categoriesID" type="integer" required>
+  Category ID to which this product belongs. Must reference an existing category.
+  
+  **Validation:** Integer, minimum value of 0
+</ParamField>
+
+## Request Example
+
+```json
+{
+  "name": "Coca cola",
+  "description": "Bebida gasificada de 2ltr",
+  "stock": 40,
+  "price": 3000,
+  "categoriesID": 1
+}
+```
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates if an error occurred during the request
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Response message describing the result
+</ResponseField>
+
+### Success Response (200)
+
+Product created successfully.
+
+### Error Responses
+
+#### 400 - Invalid Request
+
+```json
+{
+  "error": true,
+  "msg": "request body is empty"
+}
+```
+
+or
+
+```json
+{
+  "error": true,
+  "msg": "information format is incorrect"
+}
+```
+
+#### 409 - Conflict
+
+Returned when the product already exists or the category ID is invalid.
+
+## Validation Rules
+
+All validation is performed using Zod schemas in `products.validation.js`:
+
+- **name**: String with minimum 3 characters
+- **description**: String with minimum 3 characters and maximum 3000 characters  
+- **price**: Integer with minimum value 0
+- **stock**: Integer with minimum value 0
+- **categoriesID**: Integer with minimum value 0 (must reference existing category)

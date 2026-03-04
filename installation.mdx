@@ -1,0 +1,331 @@
+---
+title: 'Installation'
+description: 'Complete installation guide for the Sales Management System API'
+---
+
+# Installation
+
+This guide will walk you through installing and configuring the Sales Management System API.
+
+## System Requirements
+
+Before installing, ensure your system meets these requirements:
+
+- **Node.js**: v14.0.0 or higher
+- **MySQL**: v5.7 or higher
+- **npm**: v6.0.0 or higher (comes with Node.js)
+- **Operating System**: Linux, macOS, or Windows
+- **Memory**: Minimum 512MB RAM
+- **Disk Space**: At least 100MB free
+
+## Clone Repository
+
+Clone the repository to your local machine:
+
+```bash
+git clone <repository-url>
+cd sistema-de-gestion-de-ventas
+```
+
+## Install Dependencies
+
+The project uses the following npm packages:
+
+```bash
+npm install
+```
+
+### Core Dependencies
+
+From `package.json`:
+
+- **express** (^5.2.1) - Fast, minimalist web framework for Node.js
+- **mysql2** (^3.17.3) - MySQL client with promises and prepared statements
+- **zod** (^4.3.6) - TypeScript-first schema validation library
+
+<Note>
+  The project uses ES modules (`"type": "module"` in package.json), so all imports use ES6 syntax.
+</Note>
+
+## Database Setup
+
+### Create Database
+
+Connect to your MySQL server and create the database:
+
+```bash
+mysql -u root -p
+```
+
+Then execute:
+
+```sql
+CREATE DATABASE erpDB;
+USE erpDB;
+```
+
+### Import Schema
+
+The complete database schema is located in `src/model/database.sql`. You can import it directly:
+
+```bash
+mysql -u root -p erpDB < src/model/database.sql
+```
+
+Or execute the SQL manually:
+
+```sql
+-- Roles table
+CREATE TABLE roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+
+INSERT INTO roles (name) VALUES ('admin'), ('employee');
+
+-- Users table
+CREATE TABLE users (
+    id BINARY(16) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
+-- Clients table
+CREATE TABLE clients(
+    id BINARY(16) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE
+);
+
+-- Categories table
+CREATE TABLE categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Products table
+CREATE TABLE products (
+    id BINARY(16) PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    stock INT NOT NULL DEFAULT 0,
+    category_id INT,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+-- Sales table
+CREATE TABLE sales (
+    id BINARY(16) PRIMARY KEY,
+    clients_id BINARY(16) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (clients_id) REFERENCES clients(id)
+);
+
+-- Sale details table
+CREATE TABLE sale_details (
+    id BINARY(16) PRIMARY KEY,
+    sale_id BINARY(16) NOT NULL,
+    product_id BINARY(16) NOT NULL,
+    quantity INT NOT NULL,
+    FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+```
+
+<Warning>
+  Make sure to create tables in the order shown above to satisfy foreign key constraints.
+</Warning>
+
+### Verify Database Setup
+
+Verify all tables were created:
+
+```sql
+SHOW TABLES;
+```
+
+You should see:
+```
++------------------+
+| Tables_in_erpDB  |
++------------------+
+| categories       |
+| clients          |
+| products         |
+| roles            |
+| sale_details     |
+| sales            |
+| users            |
++------------------+
+```
+
+## Environment Configuration
+
+Configure database connection settings in `src/config.js`:
+
+```javascript
+export default {
+    PORT: 3000,
+    HOST_DATABASE: "localhost",
+    PORT_DATABASE: 3306,
+    DATABASE_NAME: "erpDB",
+    PASSWORD_DATABASE: "admin",
+    USER_DATABASE: "root"
+}
+```
+
+### Configuration Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|----------|
+| `PORT` | Application server port | 3000 |
+| `HOST_DATABASE` | MySQL host address | localhost |
+| `PORT_DATABASE` | MySQL port | 3306 |
+| `DATABASE_NAME` | Database name | erpDB |
+| `USER_DATABASE` | MySQL username | root |
+| `PASSWORD_DATABASE` | MySQL password | admin |
+
+<Warning>
+  **Security Best Practice**: In production, use environment variables instead of hardcoding credentials. Never commit sensitive credentials to version control.
+</Warning>
+
+### Using Environment Variables (Recommended)
+
+Create a `.env` file:
+
+```bash
+PORT=3000
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=erpDB
+DB_USER=root
+DB_PASSWORD=your_secure_password
+```
+
+Then update `config.js` to use environment variables:
+
+```javascript
+export default {
+    PORT: process.env.PORT || 3000,
+    HOST_DATABASE: process.env.DB_HOST || "localhost",
+    PORT_DATABASE: process.env.DB_PORT || 3306,
+    DATABASE_NAME: process.env.DB_NAME || "erpDB",
+    PASSWORD_DATABASE: process.env.DB_PASSWORD || "admin",
+    USER_DATABASE: process.env.DB_USER || "root"
+}
+```
+
+## Verify Installation
+
+### Start the Server
+
+Run the development server with auto-reload:
+
+```bash
+npm run dev
+```
+
+<Note>
+  The `dev` script uses Node.js `--watch` flag for automatic restart on file changes.
+</Note>
+
+You should see:
+
+```
+Server on port http://localhost:3000
+```
+
+### Test API Endpoint
+
+Test that the API is responding:
+
+```bash
+curl http://localhost:3000/categories
+```
+
+Expected response:
+
+```json
+{
+  "error": false,
+  "categorieList": []
+}
+```
+
+### Test Database Connection
+
+Create a test category to verify database connectivity:
+
+```bash
+curl -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test"}'
+```
+
+Expected response:
+
+```json
+{
+  "error": false,
+  "msg": "categorie was created sucessfully"
+}
+```
+
+## Troubleshooting
+
+<Accordion title="Connection refused errors">
+  - Verify MySQL is running: `sudo systemctl status mysql`
+  - Check MySQL is listening on port 3306: `netstat -an | grep 3306`
+  - Verify credentials in `config.js` are correct
+</Accordion>
+
+<Accordion title="Authentication errors">
+  - Ensure MySQL user has proper permissions:
+    ```sql
+    GRANT ALL PRIVILEGES ON erpDB.* TO 'root'@'localhost';
+    FLUSH PRIVILEGES;
+    ```
+</Accordion>
+
+<Accordion title="Port already in use">
+  - Change the PORT in `config.js` to a different value (e.g., 3001)
+  - Or kill the process using port 3000:
+    ```bash
+    lsof -ti:3000 | xargs kill -9
+    ```
+</Accordion>
+
+<Accordion title="Module not found errors">
+  - Delete `node_modules` and reinstall:
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Make your first API requests
+  </Card>
+  <Card title="Configuration Guide" icon="gear" href="/guides/configuration">
+    Advanced configuration options
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/overview">
+    Explore all endpoints
+  </Card>
+  <Card title="Database Schema" icon="database" href="/concepts/database-schema">
+    Understand the data model
+  </Card>
+</CardGroup>

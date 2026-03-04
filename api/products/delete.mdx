@@ -1,0 +1,92 @@
+---
+title: 'Delete Product'
+api: 'DELETE /products/:id'
+description: 'Delete a product by its ID'
+---
+
+This endpoint deletes a product identified by its UUID. The deletion will fail if there are existing sales that reference this product due to foreign key constraints.
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  Product UUID identifier
+  
+  **Validation:** Must be a valid UUID format
+</ParamField>
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates if an error occurred during the request
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Response message describing the result
+</ResponseField>
+
+## Success Response Example (200)
+
+```json
+{
+  "error": false,
+  "msg": "Product deleted successfully"
+}
+```
+
+## Error Responses
+
+### 400 - Invalid UUID
+
+```json
+{
+  "error": true,
+  "msg": "the id is invalid"
+}
+```
+
+### 409 - Foreign Key Constraint Violation
+
+<Warning>
+  A product cannot be deleted if it is referenced in any sales. You must delete or update the related sales first.
+</Warning>
+
+When attempting to delete a product that has associated sales, the API returns a list of all sales (sale details and sale IDs) that reference this product:
+
+```json
+{
+  "error": true,
+  "msg": "there are sales with this product",
+  "salesList": [
+    {
+      "idSaleDetails": "4033e9a1-5858-44c9-b1d7-39c718933372",
+      "idSale": "878d89a7-a1a1-4411-a359-1ad08965fb30"
+    }
+  ]
+}
+```
+
+<ResponseField name="salesList" type="array">
+  Array of sales that reference this product (only present when deletion fails)
+  
+  <expandable title="salesList item properties">
+    <ResponseField name="idSaleDetails" type="string">
+      UUID of the sale detail record that references this product
+    </ResponseField>
+    
+    <ResponseField name="idSale" type="string">
+      UUID of the sale (order) that contains this product
+    </ResponseField>
+  </expandable>
+</ResponseField>
+
+## Database Constraints
+
+The product has foreign key relationships with:
+
+- **Sales Details**: Products referenced in sales cannot be deleted
+- **Categories**: Products must belong to a valid category
+
+Before deleting a product, ensure:
+1. No sales contain this product, or
+2. Remove the product from all sales first, or  
+3. Delete the sales that contain this product

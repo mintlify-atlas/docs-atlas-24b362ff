@@ -1,0 +1,61 @@
+---
+title: "Create Client"
+api: "POST /clients"
+description: "Create a new client with name and email"
+---
+
+This endpoint creates a new client in the system. Clients are the entities that place sales orders.
+
+## Body
+
+<ParamField body="name" type="string" required>
+  Client's full name. Minimum 3 characters.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  Client's email address. Must be a valid email format.
+</ParamField>
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates if there was an error
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Success or error message
+</ResponseField>
+
+## Request Example
+
+```json
+{
+  "name": "Mark Zuckemberg",
+  "email": "markz@facebook.com"
+}
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 400 - Empty Body
+{
+  "error": true,
+  "msg": "request body is empty"
+}
+```
+
+```json 400 - Invalid Format
+{
+  "error": true,
+  "msg": "information format is incorrect"
+}
+```
+
+```json 409 - User Already Exists
+{
+  "error": true,
+  "msg": "user exist in database"
+}
+```
+</ResponseExample>

@@ -1,0 +1,203 @@
+---
+title: 'API Reference Overview'
+description: 'Complete guide to the Sales Management System REST API'
+---
+
+## Introduction
+
+The Sales Management System API is a REST API built with Node.js and Express that enables you to manage sales orders, products, categories, and clients. The API provides comprehensive CRUD (Create, Read, Update, Delete) operations for all resources with automatic stock management for sales transactions.
+
+## Base URL
+
+All API endpoints are relative to the base URL:
+
+```
+http://localhost:3000
+```
+
+## Request Format
+
+The API accepts and returns JSON-formatted data. All request bodies should be sent as JSON.
+
+### Required Headers
+
+Include the following header in all requests with a body:
+
+```
+Content-Type: application/json
+```
+
+## Response Format
+
+All API responses follow a consistent JSON structure:
+
+### Success Response
+
+```json
+{
+  "error": false,
+  "msg": "Operation completed successfully",
+  "data": { /* response data */ }
+}
+```
+
+### Error Response
+
+```json
+{
+  "error": true,
+  "msg": "Error description",
+  "details": { /* additional error information */ }
+}
+```
+
+## Error Responses
+
+The API returns descriptive error messages when operations fail. Here are common error scenarios:
+
+### Category Constraint Error
+
+When attempting to delete a category that has associated products:
+
+```json
+{
+  "error": true,
+  "msg": "there are products with this category",
+  "productList": [
+    {
+      "id": "1373fe00-14e4-11f1-9fcd-2418c6c96a00"
+    }
+  ]
+}
+```
+
+### Product Constraint Error
+
+When attempting to delete a product that exists in sales orders:
+
+```json
+{
+  "error": true,
+  "msg": "there are sales with this product",
+  "salesList": [
+    {
+      "idSaleDetails": "4033e9a1-5858-44c9-b1d7-39c718933372",
+      "idSale": "878d89a7-a1a1-4411-a359-1ad08965fb30"
+    }
+  ]
+}
+```
+
+### Client Constraint Error
+
+When attempting to delete a client with existing sales orders:
+
+```json
+{
+  "error": true,
+  "msg": "there are sales with this client",
+  "saleList": [
+    {
+      "idSale": "878d89a7-a1a1-4411-a359-1ad08965fb30"
+    }
+  ]
+}
+```
+
+## Authentication
+
+<Note>
+The API currently does not require authentication. Authentication may be added in future versions.
+</Note>
+
+## Rate Limiting
+
+<Note>
+There are currently no rate limits enforced on the API.
+</Note>
+
+## API Resources
+
+The API is organized around four main resources:
+
+<CardGroup cols={2}>
+  <Card title="Categories" icon="folder" href="/api/categories">
+    Manage product categories with create, read, and delete operations
+  </Card>
+  
+  <Card title="Products" icon="box" href="/api/products">
+    Full CRUD operations for product management including stock tracking
+  </Card>
+  
+  <Card title="Clients" icon="users" href="/api/clients">
+    Manage customer information with full CRUD capabilities
+  </Card>
+  
+  <Card title="Sales" icon="shopping-cart" href="/api/sales">
+    Create and manage sales orders with automatic stock updates
+  </Card>
+</CardGroup>
+
+## Available Endpoints
+
+### Categories (3 endpoints)
+
+- `POST /categories` - Create a new category
+- `GET /categories` - List all categories
+- `GET /categories/:id` - Get a specific category
+- `DELETE /categories/:id` - Delete a category
+
+### Products (5 endpoints)
+
+- `POST /products` - Create a new product
+- `GET /products` - List all products
+- `GET /products/:id` - Get a specific product
+- `PATCH /products/:id` - Update a product
+- `DELETE /products/:id` - Delete a product
+
+### Clients (5 endpoints)
+
+- `POST /clients` - Create a new client
+- `GET /clients` - List all clients
+- `GET /clients/:id` - Get a specific client
+- `PATCH /clients/:id` - Update a client
+- `DELETE /clients/:id` - Delete a client
+
+### Sales (5 endpoints)
+
+- `POST /sales` - Create a new sale (automatically updates stock)
+- `GET /sales` - List all sales with details
+- `GET /sales/:id` - Get a specific sale with all items
+- `PATCH /sales/:id` - Update a sale detail
+- `DELETE /sales/:id` - Delete a complete sale order
+
+## Data Validation
+
+The API uses [Zod](https://zod.dev/) for request validation. Common validation rules include:
+
+- **Category names**: Minimum 3 characters
+- **Product names**: Minimum 3 characters
+- **Product descriptions**: Minimum 10 characters
+- **Email addresses**: Must be valid email format
+- **Stock quantities**: Must be positive integers
+- **Prices**: Must be positive numbers
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Categories API" icon="folder" href="/api/categories">
+    Learn about category management
+  </Card>
+  
+  <Card title="Products API" icon="box" href="/api/products">
+    Explore product endpoints
+  </Card>
+  
+  <Card title="Clients API" icon="users" href="/api/clients">
+    Manage client data
+  </Card>
+  
+  <Card title="Sales API" icon="shopping-cart" href="/api/sales">
+    Create and track sales orders
+  </Card>
+</CardGroup>

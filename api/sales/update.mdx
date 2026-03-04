@@ -1,0 +1,90 @@
+---
+title: "Update Sale"
+api: "PATCH /sales/:id"
+description: "Update product or quantity in a sale detail with automatic stock adjustment"
+---
+
+This endpoint updates a specific sale detail by modifying the product or quantity. The system automatically adjusts stock levels to reflect the changes.
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  UUID of the sale detail to update (use `idSalesDetails` from GET responses)
+</ParamField>
+
+## Request Body
+
+All fields are optional, but at least one must be provided.
+
+<ParamField body="productId" type="string" optional>
+  UUID of the new product to replace the current one
+</ParamField>
+
+<ParamField body="quantity" type="integer" optional>
+  New quantity for the product. Must be greater than 0.
+</ParamField>
+
+## Request Example
+
+```json
+{
+  "productId": "1373fe00-14e4-11f1-9fcd-2418c6c96a00",
+  "quantity": 20
+}
+```
+
+## Stock Adjustment Behavior
+
+When updating a sale detail, the system automatically manages stock levels:
+
+### Changing Quantity
+- **Increase**: Additional units are deducted from stock
+- **Decrease**: Excess units are returned to stock
+
+### Changing Product
+- Original product: Stock is restored by the original quantity
+- New product: Stock is deducted by the specified quantity
+
+## Error Responses
+
+### Invalid ID
+
+```json
+{
+  "error": true,
+  "msg": "the id is invalid"
+}
+```
+
+Returned when the sale detail ID is not a valid UUID.
+
+### Empty Request Body
+
+```json
+{
+  "error": true,
+  "msg": "request body is empty"
+}
+```
+
+Returned when no update fields are provided.
+
+### Invalid Data
+
+```json
+{
+  "error": true,
+  "msg": "the data is invalid"
+}
+```
+
+Returned when:
+- `productId` is provided but not a valid UUID
+- `quantity` is less than 0
+- The requested quantity exceeds available stock
+
+## Important Notes
+
+- The `id` parameter refers to the **sale detail ID** (`idSalesDetails`), not the sale ID (`idSales`)
+- Stock adjustments happen automatically and atomically with the update
+- If insufficient stock is available for the new quantity/product, the update will fail

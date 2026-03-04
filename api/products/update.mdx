@@ -1,0 +1,139 @@
+---
+title: 'Update Product'
+api: 'PATCH /products/:id'
+description: 'Update an existing product with partial data'
+---
+
+This endpoint updates a product identified by its UUID. All fields are optional - you only need to include the fields you want to update.
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  Product UUID identifier
+  
+  **Validation:** Must be a valid UUID format
+</ParamField>
+
+## Request Body
+
+All fields are optional. Include only the fields you want to update.
+
+<ParamField body="name" type="string" optional>
+  Product name. Must be at least 3 characters long if provided.
+  
+  **Validation:** Minimum length of 3 characters
+</ParamField>
+
+<ParamField body="description" type="string" optional>
+  Product description. Must be between 3 and 3000 characters if provided.
+  
+  **Validation:** Minimum 3 characters, maximum 3000 characters
+</ParamField>
+
+<ParamField body="stock" type="integer" optional>
+  Available stock quantity. Must be a non-negative integer if provided.
+  
+  **Validation:** Integer, minimum value of 0
+</ParamField>
+
+<ParamField body="price" type="integer" optional>
+  Product price. Must be a non-negative integer if provided.
+  
+  **Validation:** Integer, minimum value of 0
+</ParamField>
+
+<ParamField body="categoriesID" type="integer" optional>
+  Category ID. Must reference an existing category if provided.
+  
+  **Validation:** Integer, minimum value of 0
+</ParamField>
+
+## Request Example
+
+```json
+{
+  "name": "Coca cola",
+  "description": "Bebida gasificada de 2ltr",
+  "stock": 40,
+  "price": 3000,
+  "categoriesID": 1
+}
+```
+
+Or update just specific fields:
+
+```json
+{
+  "stock": 50,
+  "price": 3200
+}
+```
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates if an error occurred during the request
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Response message ("product modify sucessfully" on success)
+</ResponseField>
+
+## Success Response Example (200)
+
+```json
+{
+  "error": false,
+  "msg": "product modify sucessfully"
+}
+```
+
+## Error Responses
+
+### 400 - Invalid UUID
+
+```json
+{
+  "error": true,
+  "msg": "the id is invalid"
+}
+```
+
+### 400 - Empty Body
+
+```json
+{
+  "error": true,
+  "msg": "request body is empty"
+}
+```
+
+### 400 - Invalid Data Format
+
+```json
+{
+  "error": true,
+  "msg": "the data format is invalid"
+}
+```
+
+### 409 - Conflict
+
+Returned when the product is not found or a database constraint is violated.
+
+```json
+{
+  "error": true,
+  "msg": "Error message describing the issue"
+}
+```
+
+## Validation Rules
+
+Fields are validated using "soft" validation (`validateProductSoft`) which only validates fields that are provided:
+
+- **name**: String with minimum 3 characters (if provided)
+- **description**: String with minimum 3 characters and maximum 3000 characters (if provided)
+- **price**: Integer with minimum value 0 (if provided)
+- **stock**: Integer with minimum value 0 (if provided)
+- **categoriesID**: Integer with minimum value 0 (if provided, must reference existing category)

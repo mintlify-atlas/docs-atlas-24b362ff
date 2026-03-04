@@ -1,0 +1,118 @@
+---
+title: "Get Sale"
+api: "GET /sales/:id"
+description: "Retrieve a specific sale with all product details"
+---
+
+This endpoint returns detailed information about a specific sale order, including all products purchased, client information, and pricing details.
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  UUID of the sale to retrieve
+</ParamField>
+
+## Response Format
+
+The response contains all products associated with the sale, with complete client and product information from joined tables.
+
+## Response Fields
+
+<ResponseField name="error" type="boolean">
+  Indicates if an error occurred
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of sale detail objects for this specific sale
+  
+  <Expandable title="data properties">
+    <ResponseField name="idSales" type="string">
+      UUID of the sale order (matches the ID parameter)
+    </ResponseField>
+    
+    <ResponseField name="idSalesDetails" type="string">
+      UUID of the sale detail record
+    </ResponseField>
+    
+    <ResponseField name="clientsId" type="string">
+      UUID of the client who made the purchase
+    </ResponseField>
+    
+    <ResponseField name="clientsName" type="string">
+      Name of the client
+    </ResponseField>
+    
+    <ResponseField name="idProduct" type="string">
+      UUID of the product
+    </ResponseField>
+    
+    <ResponseField name="nameProduct" type="string">
+      Name of the product
+    </ResponseField>
+    
+    <ResponseField name="quantity" type="integer">
+      Quantity purchased
+    </ResponseField>
+    
+    <ResponseField name="price" type="string">
+      Unit price of the product at the time of sale
+    </ResponseField>
+    
+    <ResponseField name="total" type="string">
+      Total amount for this product (price × quantity)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "error": false,
+  "data": [
+    {
+      "idSales": "4e42fc03-edf3-4212-afb5-47e9ae8400a4",
+      "idSalesDetails": "1b71fff6-ca67-424d-a391-f14b0a63d8ec",
+      "clientsId": "036c71c5-14e0-11f1-9fcd-2418c6c96a00",
+      "clientsName": "Mark Zuckemberg",
+      "idProduct": "1eeeaded-14e6-11f1-9fcd-2418c6c96a00",
+      "nameProduct": "Ptusas",
+      "quantity": 30,
+      "price": "1200.00",
+      "total": "36000.00"
+    },
+    {
+      "idSales": "4e42fc03-edf3-4212-afb5-47e9ae8400a4",
+      "idSalesDetails": "bc7ff6f2-d092-46fa-a893-71c860c2a69d",
+      "clientsId": "036c71c5-14e0-11f1-9fcd-2418c6c96a00",
+      "clientsName": "Mark Zuckemberg",
+      "idProduct": "2cfba483-14e6-11f1-9fcd-2418c6c96a00",
+      "nameProduct": "Pepsi",
+      "quantity": 50,
+      "price": "5000.00",
+      "total": "250000.00"
+    }
+  ]
+}
+```
+
+## Error Responses
+
+### Invalid ID
+
+```json
+{
+  "error": true,
+  "msg": "id is invalid"
+}
+```
+
+Returned when the provided ID is not a valid UUID format.
+
+## Understanding Multi-Product Sales
+
+When a sale contains multiple products:
+- All items share the same `idSales` value
+- Each product has a unique `idSalesDetails` identifier
+- The response array contains one object per product
+- All items are associated with the same client

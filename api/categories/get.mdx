@@ -1,0 +1,91 @@
+---
+title: 'Get Category'
+api: 'GET /categories/:id'
+description: 'Retrieve a single category by its ID'
+---
+
+## Endpoint
+
+```
+GET /categories/:id
+```
+
+Retrieves detailed information about a specific category by its unique identifier.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The unique identifier of the category to retrieve.
+  
+  **Validation Rules:**
+  - Must be an integer
+  - Must be greater than or equal to 1
+</ParamField>
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates whether an error occurred during the request.
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  A message describing the result of the operation.
+</ResponseField>
+
+<ResponseField name="categorie" type="object">
+  The category object containing detailed information.
+  
+  <Expandable title="Category Properties">
+    <ResponseField name="id" type="integer">
+      The unique identifier for the category.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      The name of the category.
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp indicating when the category was created.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Example
+
+### Success Response (200)
+
+```json
+{
+  "error": false,
+  "msg": "Categorie got sucessfully",
+  "categorie": {
+    "id": 1,
+    "name": "bebidas",
+    "created_at": "2026-02-28T14:50:19.000Z"
+  }
+}
+```
+
+## Error Responses
+
+### Invalid ID (400)
+
+Returned when the provided ID doesn't meet validation requirements (not an integer or less than 1).
+
+```json
+{
+  "error": true,
+  "msg": "id is invalid"
+}
+```
+
+### Category Not Found (400)
+
+Returned when no category exists with the specified ID.
+
+```json
+{
+  "error": true,
+  "msg": "categorie not found"
+}
+```

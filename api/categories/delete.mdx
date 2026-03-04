@@ -1,0 +1,94 @@
+---
+title: 'Delete Category'
+api: 'DELETE /categories/:id'
+description: 'Delete a category by its ID'
+---
+
+## Endpoint
+
+```
+DELETE /categories/:id
+```
+
+Deletes a specific category from the system. This operation will fail if there are products associated with the category.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The unique identifier of the category to delete.
+  
+  **Validation Rules:**
+  - Must be an integer
+  - Must be greater than or equal to 1
+</ParamField>
+
+<Warning>
+  **Foreign Key Constraint**: You cannot delete a category that has products associated with it. You must first delete or reassign all products in this category before the category can be deleted.
+</Warning>
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates whether an error occurred during the request.
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  A message describing the result of the operation.
+</ResponseField>
+
+<ResponseField name="productList" type="array" optional>
+  Only present in error responses. Contains a list of products that are preventing the category from being deleted.
+  
+  <Expandable title="Product Reference Object">
+    <ResponseField name="id" type="string">
+      The UUID of the product that references this category.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Examples
+
+### Success Response (200)
+
+```json
+{
+  "error": false,
+  "msg": "Categorie deleted successfully"
+}
+```
+
+## Error Responses
+
+### Invalid ID (400)
+
+Returned when the provided ID doesn't meet validation requirements.
+
+```json
+{
+  "error": true,
+  "msg": "id is invalid"
+}
+```
+
+### Foreign Key Constraint Error (409)
+
+Returned when attempting to delete a category that has products associated with it. The response includes the IDs of products that must be handled first.
+
+```json
+{
+  "error": true,
+  "msg": "there are products with this category",
+  "productList": [
+    {
+      "id": "1373fe00-14e4-11f1-9fcd-2418c6c96a00"
+    }
+  ]
+}
+```
+
+<Note>
+  Before deleting a category, you can either:
+  1. Delete all products in that category first
+  2. Update products to use a different category
+  3. The system will return all product IDs that need to be handled
+</Note>

@@ -1,0 +1,120 @@
+---
+title: "Delete Sale"
+api: "DELETE /sales/:id"
+description: "Delete a sale order with automatic stock restoration and cascading detail deletion"
+---
+
+This endpoint deletes a complete sale order, including all associated sale details. The system automatically restores the product stock for all items in the sale.
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  UUID of the sale to delete (use `idSales` from GET responses)
+</ParamField>
+
+## Cascading Behavior
+
+<Warning>
+  Deleting a sale automatically deletes all associated sale details (`sale_details` table). This is a cascading delete operation that cannot be undone.
+</Warning>
+
+When you delete a sale:
+1. All `sale_details` records linked to the sale are removed
+2. Stock is restored for each product that was in the sale
+3. The sale record itself is deleted
+
+## Stock Restoration
+
+The system automatically adds back the purchased quantities to the product stock when a sale is deleted.
+
+## Response Example
+
+```json
+{
+  "error": false,
+  "msg": "Sale deleted successfully"
+}
+```
+
+## Deletion Example
+
+Deleting sale `4e42fc03-edf3-4212-afb5-47e9ae8400a4`
+
+**Before deletion** - `GET /sales`
+```json
+{
+  "error": false,
+  "data": [
+    {
+      "idSales": "4e42fc03-edf3-4212-afb5-47e9ae8400a4",
+      "idSalesDetails": "1b71fff6-ca67-424d-a391-f14b0a63d8ec",
+      "clientsId": "036c71c5-14e0-11f1-9fcd-2418c6c96a00",
+      "clientsName": "Mark Zuckemberg",
+      "idProduct": "1373fe00-14e4-11f1-9fcd-2418c6c96a00",
+      "nameProduct": "Coca cola",
+      "quantity": 20,
+      "price": "3000.00",
+      "total": "60000.00"
+    },
+    {
+      "idSales": "878d89a7-a1a1-4411-a359-1ad08965fb30",
+      "idSalesDetails": "4033e9a1-5858-44c9-b1d7-39c718933372",
+      "clientsId": "036c71c5-14e0-11f1-9fcd-2418c6c96a00",
+      "clientsName": "Mark Zuckemberg",
+      "idProduct": "1373fe00-14e4-11f1-9fcd-2418c6c96a00",
+      "nameProduct": "Coca cola",
+      "quantity": 10,
+      "price": "3000.00",
+      "total": "30000.00"
+    },
+    {
+      "idSales": "4e42fc03-edf3-4212-afb5-47e9ae8400a4",
+      "idSalesDetails": "bc7ff6f2-d092-46fa-a893-71c860c2a69d",
+      "clientsId": "036c71c5-14e0-11f1-9fcd-2418c6c96a00",
+      "clientsName": "Mark Zuckemberg",
+      "idProduct": "2cfba483-14e6-11f1-9fcd-2418c6c96a00",
+      "nameProduct": "Pepsi",
+      "quantity": 50,
+      "price": "5000.00",
+      "total": "250000.00"
+    }
+  ]
+}
+```
+
+**After deletion** - `GET /sales`
+```json
+{
+  "error": false,
+  "data": [
+    {
+      "idSales": "878d89a7-a1a1-4411-a359-1ad08965fb30",
+      "idSalesDetails": "4033e9a1-5858-44c9-b1d7-39c718933372",
+      "clientsId": "036c71c5-14e0-11f1-9fcd-2418c6c96a00",
+      "clientsName": "Mark Zuckemberg",
+      "idProduct": "1373fe00-14e4-11f1-9fcd-2418c6c96a00",
+      "nameProduct": "Coca cola",
+      "quantity": 10,
+      "price": "3000.00",
+      "total": "30000.00"
+    }
+  ]
+}
+```
+
+Notice that both sale details for sale `4e42fc03-edf3-4212-afb5-47e9ae8400a4` were removed:
+- Coca cola (20 units) - stock restored
+- Pepsi (50 units) - stock restored
+
+## Error Responses
+
+### Invalid ID
+
+```json
+{
+  "error": true,
+  "msg": "the id is invalid"
+}
+```
+
+Returned when the provided ID is not a valid UUID format.

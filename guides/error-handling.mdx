@@ -1,0 +1,676 @@
+---
+title: 'Error Handling'
+description: 'Understand and handle errors in the Sales Management System API'
+---
+
+# Error Handling
+
+The Sales Management System API uses consistent error response patterns to help you handle failures gracefully.
+
+## Error Response Format
+
+All error responses follow this structure:
+
+```json
+{
+  "error": true,
+  "msg": "Error description"
+}
+```
+
+Some errors include additional context:
+
+```json
+{
+  "error": true,
+  "msg": "Detailed error message",
+  "productList": [...],  // For foreign key violations
+  "saleList": [...]      // For related records
+}
+```
+
+## HTTP Status Codes
+
+The API uses standard HTTP status codes:
+
+| Status Code | Meaning | When Used |
+|-------------|---------|----------|
+| `200` | Success | Operation completed successfully |
+| `400` | Bad Request | Invalid input, validation failed |
+| `404` | Not Found | Resource doesn't exist |
+| `409` | Conflict | Duplicate entry, foreign key constraint |
+| `500` | Server Error | Database query failed, internal error |
+
+## Common Errors
+
+### Validation Errors
+
+Occur when input doesn't meet validation requirements.
+
+#### Empty Request Body
+
+**Request:**
+```bash
+curl -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Response:**
+```json
+{
+  "error": true,
+  "msg": "request body is empty"
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+**Solution:** Provide required fields in the request body.
+
+#### Invalid Field Values
+
+**Example: Category name too short**
+
+**Request:**
+```bash
+curl -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{"name":"ab"}'
+```
+
+**Response:**
+```json
+{
+  "error": true,
+  "msg": "categorie name is invalid"
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+**Validation Rules:**
+- Category name: minimum 3 characters
+- Product name: minimum 3 characters
+- Product description: minimum 10 characters
+- Client name: minimum 3 characters
+- Email: valid email format
+- Stock: non-negative integer
+- Price: positive decimal
+- Quantity: positive integer
+
+<Note>
+  Validation is performed using **Zod** schemas in `src/controller/validation/`.
+</Note>
+
+### Duplicate Entry Errors
+
+Occur when trying to create a record with a value that must be unique.
+
+#### Duplicate Category Name
+
+**Request:**
+```bash
+curl -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{"name":"bebidas"}'
+```
+
+**Response (if "bebidas" already exists):**
+```json
+{
+  "error": true,
+  "msg": "categorie name exist"
+}
+```
+
+**Status Code:** `409 Conflict`
+
+**Solution:** Use a different category name.
+
+#### Duplicate Client Email
+
+**Request:**
+```bash
+curl -X POST http://localhost:3000/clients \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John Doe","email":"john@example.com"}'
+```
+
+**Response (if email exists):**
+```json
+{
+  "error": true,
+  "msg": "Email already registered"
+}
+```
+
+**Status Code:** `409 Conflict`
+
+**Unique Constraints:**
+- `categories.name`
+- `clients.email`
+- `users.email`
+- `roles.name`
+
+### Foreign Key Constraint Violations
+
+Occur when trying to delete a record that other records depend on.
+
+#### Cannot Delete Category with Products
+
+From the README.md example:
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:3000/categories/1
+```
+
+**Response (if products exist with category_id = 1):**
+```json
+{
+  "error": true,
+  "msg": "there are products with this category",
+  "productList": [
+    {
+      "id": "1373fe00-14e4-11f1-9fcd-2418c6c96a00"
+    }
+  ]
+}
+```
+
+**Status Code:** `409 Conflict`
+
+**Solution:** 
+1. Update products to a different category
+2. Delete the products first
+3. Or keep the category
+
+**Implementation (from `src/model/categorie.model.js:30-48`):**
+
+```javascript
+export function deleteCategorie(id) {
+    return pool.query(
+        `SELECT BIN_TO_UUID(id) as id FROM products WHERE category_id = ?`,
+        [id]
+    ).then((value) => {
+        if (value[0].length != 0) {
+            throw new Error(JSON.stringify({ 
+                error: true, 
+                msg: "there are products with this category", 
+                productList: value[0] 
+            }))
+        } else {
+            return pool.query(
+                "DELETE FROM categories WHERE id = ?",
+                [id]
+            )
+        }
+    }).then((row) => {
+        return { error: false, msg: "Categorie deleted successfully" };
+    }).catch((err) => {
+        return JSON.parse(err.message)
+    })
+}
+```
+
+#### Cannot Delete Product with Sales
+
+From the README.md example:
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:3000/products/1373fe00-14e4-11f1-9fcd-2418c6c96a00
+```
+
+**Response (if product has sales):**
+```json
+{
+  "error": true,
+  "msg": "there are sales with this product",
+  "salesList": [
+    {
+      "idSaleDetails": "4033e9a1-5858-44c9-b1d7-39c718933372",
+      "idSale": "878d89a7-a1a1-4411-a359-1ad08965fb30"
+    }
+  ]
+}
+```
+
+**Status Code:** `409 Conflict`
+
+**Solution:** 
+- Products with sales cannot be deleted (data integrity)
+- Use the `is_deleted` flag for soft deletion instead
+
+#### Cannot Delete Client with Sales
+
+From the README.md example:
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:3000/clients/036c71c5-14e0-11f1-9fcd-2418c6c96a00
+```
+
+**Response (if client has sales):**
+```json
+{
+  "error": true,
+  "msg": "there are sales with this client",
+  "saleList": [
+    {
+      "idSale": "878d89a7-a1a1-4411-a359-1ad08965fb30"
+    }
+  ]
+}
+```
+
+**Status Code:** `409 Conflict`
+
+**Solution:** 
+- Clients with sales history cannot be deleted
+- This preserves historical sales data
+
+### Stock Validation Errors
+
+Occur when trying to sell more items than available in stock.
+
+**Request:**
+```bash
+curl -X POST http://localhost:3000/sales \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clientId": "036c71c5-14e0-11f1-9fcd-2418c6c96a00",
+    "ordenDetails": [{
+      "productId": "1373fe00-14e4-11f1-9fcd-2418c6c96a00",
+      "quantity": 100
+    }]
+  }'
+```
+
+**Response (if product stock < 100):**
+```json
+{
+  "error": true,
+  "msg": "Insufficient stock for product",
+  "available": 40,
+  "requested": 100
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+**Solution:** Reduce quantity to available stock or restock the product.
+
+### Resource Not Found Errors
+
+Occur when requesting a non-existent resource.
+
+**Request:**
+```bash
+curl http://localhost:3000/categories/999
+```
+
+**Response:**
+```json
+{
+  "error": true,
+  "msg": "Categorie no exits"
+}
+```
+
+**Status Code:** `404 Not Found` (or `400` depending on implementation)
+
+**Common scenarios:**
+- Invalid category ID
+- Invalid product UUID
+- Invalid client UUID
+- Invalid sale UUID
+
+### Database Query Errors
+
+Occur when database operations fail.
+
+**Response:**
+```json
+{
+  "error": true,
+  "msg": "Query of createCategories fail"
+}
+```
+
+**Status Code:** `500 Internal Server Error`
+
+**Common causes:**
+- Database connection lost
+- MySQL server down
+- Table doesn't exist
+- Insufficient permissions
+
+**Troubleshooting:**
+1. Check database connection in `src/config.js`
+2. Verify MySQL is running: `sudo systemctl status mysql`
+3. Check database exists: `SHOW DATABASES;`
+4. Verify user permissions: `SHOW GRANTS FOR 'user'@'localhost';`
+
+## Error Handling in Code
+
+### Controller Layer
+
+Controllers validate input and handle model errors:
+
+```javascript
+const createCategorieController = async (req, res) => {
+    // Check empty body
+    if (isEmpty(req.body)) 
+        return res.status(400).json({ 
+            error: true, 
+            msg: "request body is empty" 
+        });
+
+    const { name } = req.body;
+
+    // Validate input
+    const validCategorie = await validateCategorie(name)
+    if (!validCategorie) 
+        return res.status(400).json({ 
+            error: true, 
+            msg: "categorie name is invalid" 
+        });
+
+    // Call model
+    const data = await createCategorie(name)
+    if (data.error) 
+        return res.status(409).json({ 
+            error: true, 
+            msg: "categorie name exist" 
+        });
+    
+    return res.status(200).json({ 
+        error: false, 
+        msg: "categorie was created sucessfully" 
+    });
+}
+```
+
+### Model Layer
+
+Models catch database errors and return standardized responses:
+
+```javascript
+export function createCategorie(name) {
+    return pool.query(
+        "INSERT INTO categories (name) VALUES (?)",
+        [name]
+    ).then(() => {
+        return { error: false, msg: "categorie created sucessfully" }
+    }).catch((err) => {
+        return { error: true, msg: "Query of createCategories fail" }
+    })
+}
+```
+
+### Validation Layer
+
+Zod schemas validate data types and constraints:
+
+```javascript
+import z from "zod";
+
+const schemmaName = z.string().min(3)
+
+export const validateCategorie = async (categorie) => {
+    let result = await schemmaName.safeParseAsync(categorie)
+    return result.success;
+}
+```
+
+<Note>
+  `safeParseAsync` doesn't throw exceptions, making error handling cleaner.
+</Note>
+
+## Client-Side Error Handling
+
+### JavaScript/Node.js Example
+
+```javascript
+try {
+    const response = await fetch('http://localhost:3000/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'bebidas' })
+    });
+    
+    const data = await response.json();
+    
+    if (data.error) {
+        // Handle API error
+        console.error('API Error:', data.msg);
+        
+        if (data.productList) {
+            console.log('Affected products:', data.productList);
+        }
+    } else {
+        // Success
+        console.log('Success:', data.msg);
+    }
+} catch (err) {
+    // Handle network/parse errors
+    console.error('Request failed:', err);
+}
+```
+
+### Python Example
+
+```python
+import requests
+
+try:
+    response = requests.post(
+        'http://localhost:3000/categories',
+        json={'name': 'bebidas'}
+    )
+    data = response.json()
+    
+    if data.get('error'):
+        print(f"API Error: {data['msg']}")
+        if 'productList' in data:
+            print(f"Affected products: {data['productList']}")
+    else:
+        print(f"Success: {data['msg']}")
+        
+except requests.exceptions.RequestException as e:
+    print(f"Request failed: {e}")
+```
+
+### cURL with Error Checking
+
+```bash
+response=$(curl -s -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{"name":"bebidas"}')
+
+error=$(echo $response | jq -r '.error')
+
+if [ "$error" = "true" ]; then
+    msg=$(echo $response | jq -r '.msg')
+    echo "Error: $msg"
+    exit 1
+else
+    echo "Success"
+fi
+```
+
+## Error Recovery Strategies
+
+<Accordion title="Validation Errors (400)">
+  **Strategy:** Fix the input and retry
+  
+  1. Check validation rules in the documentation
+  2. Ensure all required fields are present
+  3. Verify data types and formats
+  4. Retry with corrected data
+</Accordion>
+
+<Accordion title="Duplicate Entries (409)">
+  **Strategy:** Use a different value or update existing record
+  
+  1. Check if the record already exists (GET request)
+  2. If it exists and is correct, use it
+  3. If it exists but needs changes, use UPDATE (PATCH)
+  4. If it must be unique, choose a different value
+</Accordion>
+
+<Accordion title="Foreign Key Violations (409)">
+  **Strategy:** Handle dependencies before deletion
+  
+  1. Check for dependent records (the error includes IDs)
+  2. Update or delete dependent records first
+  3. Or keep the parent record if dependencies exist
+  4. Consider soft deletion instead of hard deletion
+</Accordion>
+
+<Accordion title="Resource Not Found (404)">
+  **Strategy:** Verify the ID and handle gracefully
+  
+  1. Check if the ID/UUID is correct
+  2. Verify the resource exists (GET request)
+  3. Handle missing resources in your UI/logic
+  4. Don't assume resources exist
+</Accordion>
+
+<Accordion title="Database Errors (500)">
+  **Strategy:** Check connection and retry
+  
+  1. Verify database is running
+  2. Check network connectivity
+  3. Implement exponential backoff retry logic
+  4. Log errors for investigation
+  5. Consider circuit breaker pattern for production
+</Accordion>
+
+## Best Practices
+
+<Steps>
+  <Step title="Always Check the error Field">
+    Every response includes `"error": true/false`. Always check this before processing data:
+    ```javascript
+    if (data.error) {
+        // Handle error
+    } else {
+        // Process success data
+    }
+    ```
+  </Step>
+  
+  <Step title="Display User-Friendly Messages">
+    Convert API error messages to user-friendly text:
+    ```javascript
+    const errorMessages = {
+        'categorie name is invalid': 'Category name must be at least 3 characters',
+        'request body is empty': 'Please provide the required information',
+        'categorie name exist': 'A category with this name already exists'
+    };
+    
+    const userMessage = errorMessages[data.msg] || 'An error occurred';
+    ```
+  </Step>
+  
+  <Step title="Log Errors for Debugging">
+    Keep detailed logs of errors:
+    ```javascript
+    console.error('API Error:', {
+        endpoint: '/categories',
+        method: 'POST',
+        status: response.status,
+        error: data.msg,
+        timestamp: new Date().toISOString()
+    });
+    ```
+  </Step>
+  
+  <Step title="Implement Retry Logic">
+    For transient errors (500), implement retry with exponential backoff:
+    ```javascript
+    async function apiCallWithRetry(url, options, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                
+                if (!data.error || response.status < 500) {
+                    return data;
+                }
+                
+                // Wait before retry (exponential backoff)
+                await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+            } catch (err) {
+                if (i === maxRetries - 1) throw err;
+            }
+        }
+    }
+    ```
+  </Step>
+  
+  <Step title="Handle Network Errors">
+    Network failures are different from API errors:
+    ```javascript
+    try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        
+        if (data.error) {
+            // API returned an error
+        }
+    } catch (err) {
+        // Network error, parse error, etc.
+        console.error('Network error:', err);
+    }
+    ```
+  </Step>
+</Steps>
+
+## Testing Error Scenarios
+
+Test your error handling with these scenarios:
+
+```bash
+# Validation error
+curl -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{"name":"ab"}'
+
+# Duplicate entry
+curl -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{"name":"bebidas"}' # Run twice
+
+# Foreign key violation
+# First create a product with category 1, then:
+curl -X DELETE http://localhost:3000/categories/1
+
+# Not found
+curl http://localhost:3000/categories/99999
+
+# Empty body
+curl -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    See all endpoints and their error responses
+  </Card>
+  <Card title="Database Schema" icon="database" href="/concepts/database-schema">
+    Understand foreign key relationships
+  </Card>
+  <Card title="Architecture" icon="diagram-project" href="/concepts/architecture">
+    Learn how errors flow through the system
+  </Card>
+  <Card title="Configuration" icon="gear" href="/guides/configuration">
+    Fix database connection errors
+  </Card>
+</CardGroup>

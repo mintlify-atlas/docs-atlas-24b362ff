@@ -1,0 +1,85 @@
+---
+title: "Update Client"
+api: "PATCH /clients/:id"
+description: "Update client information"
+---
+
+This endpoint updates an existing client's information. All fields in the request body are optional.
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  Client's unique identifier in UUID format
+</ParamField>
+
+## Body
+
+<ParamField body="name" type="string">
+  Client's full name. Minimum 3 characters. (Optional)
+</ParamField>
+
+<ParamField body="email" type="string">
+  Client's email address. Must be a valid email format. (Optional)
+</ParamField>
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates if there was an error
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Success or error message
+</ResponseField>
+
+## Request Example
+
+```json
+{
+  "name": "Mark Zuckemberg",
+  "email": "markzuck@facebook.com"
+}
+```
+
+<Note>
+All fields in the request body are optional. You can update just the name, just the email, or both.
+</Note>
+
+## Error Responses
+
+<ResponseExample>
+```json 200 - Success
+{
+  "error": false,
+  "msg": "User update sucessfully"
+}
+```
+
+```json 400 - Invalid ID
+{
+  "error": true,
+  "msg": "Id is invalid"
+}
+```
+
+```json 400 - Empty Body
+{
+  "error": true,
+  "msg": "request body is empty"
+}
+```
+
+```json 400 - Invalid Format
+{
+  "error": true,
+  "msg": "information format is incorrect"
+}
+```
+
+```json 409 - User Not Found
+{
+  "error": true,
+  "msg": "user id no exist"
+}
+```
+</ResponseExample>

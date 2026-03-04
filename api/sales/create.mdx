@@ -1,0 +1,108 @@
+---
+title: "Create Sale"
+api: "POST /sales"
+description: "Create a new sale order with automatic stock deduction"
+---
+
+This endpoint creates a sale order by associating a client with one or more products. The system automatically deducts the ordered quantity from the product stock.
+
+## Request Body
+
+<ParamField body="clientId" type="string" required>
+  UUID of the client making the purchase
+</ParamField>
+
+<ParamField body="ordenDetails" type="array" required>
+  Array of products being purchased. Must contain at least one item.
+  
+  <Expandable title="ordenDetails properties">
+    <ParamField body="productId" type="string" required>
+      UUID of the product being purchased
+    </ParamField>
+    
+    <ParamField body="quantity" type="integer" required>
+      Quantity to purchase. Must be greater than 0 and not exceed available stock.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Request Example
+
+```json
+{ 
+  "clientId": "036c71c5-14e0-11f1-9fcd-2418c6c96a00",
+  "ordenDetails": [
+    {
+      "productId": "1373fe00-14e4-11f1-9fcd-2418c6c96a00",
+      "quantity": 10
+    }
+  ] 
+}
+```
+
+## Automatic Stock Management
+
+<Note>
+  When a sale is created, the system automatically deducts the purchased quantity from the product's stock. This ensures inventory levels are always accurate and up-to-date.
+</Note>
+
+### Stock Deduction Example
+
+When the above sale is created with 10 units of Coca Cola:
+
+**Before the sale** - `/products/1373fe00-14e4-11f1-9fcd-2418c6c96a00`
+```json
+{
+  "error": false,
+  "msg": "Product got sucessfully",
+  "product": {
+    "id": "b6da7bbc-14b9-11f1-9fcd-2418c6c96a00",
+    "name": "Coca cola",
+    "description": "Bebida gasificada de 2ltr",
+    "price": "3000.00",
+    "stock": 40,
+    "category_id": 1,
+    "created_at": "2026-02-28T15:25:29.000Z",
+    "updated_at": "2026-02-28T15:25:29.000Z"
+  }
+}
+```
+
+**After the sale** - Stock reduced from 40 to 30
+```json
+{
+  "error": false,
+  "msg": "Product got sucessfully",
+  "product": {
+    "id": "1373fe00-14e4-11f1-9fcd-2418c6c96a00",
+    "name": "Coca cola",
+    "description": "Bebida gasificada de 2ltr",
+    "price": "3000.00",
+    "stock": 30,
+    "category_id": 1,
+    "created_at": "2026-02-28T20:28:43.000Z",
+    "updated_at": "2026-02-28T20:31:28.000Z"
+  }
+}
+```
+
+## Error Responses
+
+### Insufficient Stock
+
+If the requested quantity exceeds available stock, the API will return an error and the sale will not be created.
+
+### Invalid Data
+
+```json
+{
+  "error": true,
+  "msg": "the data is invalid"
+}
+```
+
+Returned when:
+- `clientId` is not a valid UUID
+- `ordenDetails` is empty or missing
+- `productId` is not a valid UUID
+- `quantity` is less than 0

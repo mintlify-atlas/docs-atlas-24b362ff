@@ -1,0 +1,67 @@
+---
+title: "Delete Client"
+api: "DELETE /clients/:id"
+description: "Delete a client from the system"
+---
+
+This endpoint deletes a client from the system. If the client has associated sales orders, the deletion will fail due to foreign key constraints.
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  Client's unique identifier in UUID format
+</ParamField>
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates if there was an error
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Success or error message
+</ResponseField>
+
+<ResponseField name="saleList" type="array">
+  Array of sales associated with this client (only present on error)
+  
+  <Expandable title="Sale Object">
+    <ResponseField name="idSale" type="string">
+      Sale's unique identifier (UUID format)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Examples
+
+<ResponseExample>
+```json 200 - Success
+{
+  "error": false,
+  "msg": "Client deleted successfully"
+}
+```
+
+```json 400 - Invalid ID
+{
+  "error": true,
+  "msg": "Id is invalid"
+}
+```
+
+```json 409 - Foreign Key Constraint
+{
+  "error": true,
+  "msg": "there are sales with this client",
+  "saleList": [
+    {
+      "idSale": "878d89a7-a1a1-4411-a359-1ad08965fb30"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+<Warning>
+Clients with existing sales orders cannot be deleted. You must delete all associated sales first, or consider implementing a soft delete strategy.
+</Warning>

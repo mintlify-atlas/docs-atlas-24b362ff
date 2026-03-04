@@ -1,0 +1,447 @@
+---
+title: 'Configuration'
+description: 'Configure database connections, server settings, and environment variables'
+---
+
+# Configuration Guide
+
+The Sales Management System API uses a centralized configuration file for all environment-specific settings.
+
+## Configuration File
+
+The main configuration is located at `src/config.js`:
+
+```javascript
+export default {
+    PORT: 3000,
+    HOST_DATABASE: "localhost",
+    PORT_DATABASE: 3306,
+    DATABASE_NAME: "erpDB",
+    PASSWORD_DATABASE: "admin",
+    USER_DATABASE: "root"
+}
+```
+
+## Configuration Parameters
+
+### Server Configuration
+
+#### PORT
+
+The port on which the Express server listens.
+
+- **Type**: `number`
+- **Default**: `3000`
+- **Example**: `PORT: 8080`
+
+**Usage in code:**
+
+```javascript
+app.listen(config.PORT, (err) => {
+    if (err) console.log(err)
+    else {
+        console.log(`Server on port http://localhost:${config.PORT}`)
+    }
+})
+```
+
+<Note>
+  If port 3000 is already in use, change this to an available port like 3001 or 8080.
+</Note>
+
+### Database Configuration
+
+#### HOST_DATABASE
+
+MySQL server hostname or IP address.
+
+- **Type**: `string`
+- **Default**: `"localhost"`
+- **Examples**:
+  - Local: `"localhost"` or `"127.0.0.1"`
+  - Remote: `"db.example.com"` or `"192.168.1.100"`
+
+#### PORT_DATABASE
+
+MySQL server port.
+
+- **Type**: `number`
+- **Default**: `3306`
+- **Example**: `PORT_DATABASE: 3307` (for non-standard MySQL port)
+
+#### DATABASE_NAME
+
+Name of the MySQL database.
+
+- **Type**: `string`
+- **Default**: `"erpDB"`
+- **Example**: `DATABASE_NAME: "sales_system"`
+
+<Warning>
+  Ensure this database exists before starting the application. Create it with:
+  ```sql
+  CREATE DATABASE erpDB;
+  ```
+</Warning>
+
+#### USER_DATABASE
+
+MySQL username for authentication.
+
+- **Type**: `string`
+- **Default**: `"root"`
+- **Example**: `USER_DATABASE: "sales_api_user"`
+
+**Best practice:** Create a dedicated user with limited privileges:
+
+```sql
+CREATE USER 'sales_api_user'@'localhost' IDENTIFIED BY 'secure_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON erpDB.* TO 'sales_api_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+#### PASSWORD_DATABASE
+
+MySQL password for authentication.
+
+- **Type**: `string`
+- **Default**: `"admin"`
+- **Example**: `PASSWORD_DATABASE: "my_secure_password_123"`
+
+<Warning>
+  **NEVER commit passwords to version control!** Use environment variables in production (see below).
+</Warning>
+
+## Environment Variables (Recommended)
+
+For production and team environments, use environment variables instead of hardcoded values.
+
+### Setup
+
+1. **Install dotenv (optional):**
+
+```bash
+npm install dotenv
+```
+
+2. **Create `.env` file:**
+
+```bash
+# Server Configuration
+PORT=3000
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=erpDB
+DB_USER=root
+DB_PASSWORD=admin
+```
+
+3. **Update `config.js`:**
+
+```javascript
+import dotenv from 'dotenv';
+dotenv.config();
+
+export default {
+    PORT: parseInt(process.env.PORT) || 3000,
+    HOST_DATABASE: process.env.DB_HOST || "localhost",
+    PORT_DATABASE: parseInt(process.env.DB_PORT) || 3306,
+    DATABASE_NAME: process.env.DB_NAME || "erpDB",
+    PASSWORD_DATABASE: process.env.DB_PASSWORD || "admin",
+    USER_DATABASE: process.env.DB_USER || "root"
+}
+```
+
+4. **Add `.env` to `.gitignore`:**
+
+```bash
+echo ".env" >> .gitignore
+```
+
+### System Environment Variables
+
+Alternatively, set environment variables at the system level:
+
+**Linux/macOS:**
+
+```bash
+export PORT=3000
+export DB_HOST=localhost
+export DB_PORT=3306
+export DB_NAME=erpDB
+export DB_USER=root
+export DB_PASSWORD=admin
+
+npm run dev
+```
+
+**Windows (CMD):**
+
+```cmd
+set PORT=3000
+set DB_HOST=localhost
+set DB_PORT=3306
+set DB_NAME=erpDB
+set DB_USER=root
+set DB_PASSWORD=admin
+
+npm run dev
+```
+
+**Windows (PowerShell):**
+
+```powershell
+$env:PORT=3000
+$env:DB_HOST="localhost"
+$env:DB_PORT=3306
+$env:DB_NAME="erpDB"
+$env:DB_USER="root"
+$env:DB_PASSWORD="admin"
+
+npm run dev
+```
+
+## Connection Pool Configuration
+
+The database connection pool is configured in `src/model/pool.js`:
+
+```javascript
+import { createPool } from 'mysql2/promise';
+import config from '../config.js';
+
+export const pool = createPool({
+    host: config.HOST_DATABASE,
+    port: config.PORT_DATABASE,
+    database: config.DATABASE_NAME,
+    user: config.USER_DATABASE,
+    password: config.PASSWORD_DATABASE
+});
+```
+
+### Advanced Pool Options
+
+You can extend the pool configuration with additional options:
+
+```javascript
+export const pool = createPool({
+    host: config.HOST_DATABASE,
+    port: config.PORT_DATABASE,
+    database: config.DATABASE_NAME,
+    user: config.USER_DATABASE,
+    password: config.PASSWORD_DATABASE,
+    
+    // Connection pool settings
+    connectionLimit: 10,        // Max connections in pool
+    queueLimit: 0,             // No limit on queued requests
+    waitForConnections: true,   // Wait for available connection
+    
+    // Connection timeouts
+    connectTimeout: 10000,      // 10 seconds
+    acquireTimeout: 10000,      // 10 seconds
+    
+    // Timezone
+    timezone: 'Z',             // UTC
+    
+    // Character set
+    charset: 'utf8mb4'         // Full Unicode support
+});
+```
+
+### Pool Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `connectionLimit` | number | 10 | Maximum connections in pool |
+| `queueLimit` | number | 0 | Max queued connection requests (0 = unlimited) |
+| `waitForConnections` | boolean | true | Wait for connection when pool is full |
+| `connectTimeout` | number | 10000 | Milliseconds before connection timeout |
+| `acquireTimeout` | number | 10000 | Milliseconds before acquire timeout |
+| `timezone` | string | 'local' | Timezone for MySQL TIMESTAMP columns |
+| `charset` | string | 'UTF8_GENERAL_CI' | Character set for connection |
+
+## Environment-Specific Configurations
+
+### Development
+
+```javascript
+export default {
+    PORT: 3000,
+    HOST_DATABASE: "localhost",
+    PORT_DATABASE: 3306,
+    DATABASE_NAME: "erpDB_dev",
+    PASSWORD_DATABASE: "dev_password",
+    USER_DATABASE: "dev_user"
+}
+```
+
+### Testing
+
+```javascript
+export default {
+    PORT: 3001,
+    HOST_DATABASE: "localhost",
+    PORT_DATABASE: 3306,
+    DATABASE_NAME: "erpDB_test",
+    PASSWORD_DATABASE: "test_password",
+    USER_DATABASE: "test_user"
+}
+```
+
+### Production
+
+```javascript
+export default {
+    PORT: process.env.PORT || 80,
+    HOST_DATABASE: process.env.DB_HOST,
+    PORT_DATABASE: parseInt(process.env.DB_PORT),
+    DATABASE_NAME: process.env.DB_NAME,
+    PASSWORD_DATABASE: process.env.DB_PASSWORD,
+    USER_DATABASE: process.env.DB_USER
+}
+```
+
+<Warning>
+  In production:
+  - Always use environment variables
+  - Use strong passwords
+  - Restrict database user privileges
+  - Use SSL/TLS for database connections
+  - Never expose config.js with credentials
+</Warning>
+
+## Configuration Validation
+
+Add validation to ensure all required config values are present:
+
+```javascript
+const config = {
+    PORT: parseInt(process.env.PORT) || 3000,
+    HOST_DATABASE: process.env.DB_HOST || "localhost",
+    PORT_DATABASE: parseInt(process.env.DB_PORT) || 3306,
+    DATABASE_NAME: process.env.DB_NAME || "erpDB",
+    PASSWORD_DATABASE: process.env.DB_PASSWORD,
+    USER_DATABASE: process.env.DB_USER || "root"
+};
+
+// Validate required fields
+if (!config.DATABASE_NAME) {
+    throw new Error("DATABASE_NAME is required");
+}
+
+if (!config.PASSWORD_DATABASE) {
+    console.warn("WARNING: Using default password. Set DB_PASSWORD environment variable.");
+}
+
+export default config;
+```
+
+## Troubleshooting
+
+<Accordion title="Cannot connect to MySQL">
+  **Check:**
+  1. MySQL service is running: `sudo systemctl status mysql`
+  2. Host and port are correct
+  3. Firewall allows connection on port 3306
+  4. MySQL is listening on the correct interface:
+     ```sql
+     SHOW VARIABLES LIKE 'bind_address';
+     ```
+</Accordion>
+
+<Accordion title="Access denied for user">
+  **Check:**
+  1. Username and password are correct
+  2. User has permissions on the database:
+     ```sql
+     SHOW GRANTS FOR 'root'@'localhost';
+     ```
+  3. User exists:
+     ```sql
+     SELECT User, Host FROM mysql.user;
+     ```
+</Accordion>
+
+<Accordion title="Unknown database error">
+  **Solution:**
+  Create the database:
+  ```sql
+  CREATE DATABASE erpDB;
+  ```
+  
+  Or check the database name:
+  ```sql
+  SHOW DATABASES;
+  ```
+</Accordion>
+
+<Accordion title="Port already in use">
+  **Solutions:**
+  1. Change PORT in config.js to a different value (e.g., 3001)
+  2. Find and kill the process using the port:
+     ```bash
+     # Linux/macOS
+     lsof -ti:3000 | xargs kill -9
+     
+     # Windows
+     netstat -ano | findstr :3000
+     taskkill /PID <PID> /F
+     ```
+</Accordion>
+
+## Security Best Practices
+
+<Steps>
+  <Step title="Use Environment Variables">
+    Never hardcode credentials in `config.js` for production environments.
+  </Step>
+  
+  <Step title="Create Dedicated Database User">
+    Don't use the `root` user. Create a user with minimal required privileges:
+    ```sql
+    CREATE USER 'api_user'@'localhost' IDENTIFIED BY 'strong_password';
+    GRANT SELECT, INSERT, UPDATE, DELETE ON erpDB.* TO 'api_user'@'localhost';
+    ```
+  </Step>
+  
+  <Step title="Use Strong Passwords">
+    Generate secure passwords with at least 16 characters including uppercase, lowercase, numbers, and symbols.
+  </Step>
+  
+  <Step title="Restrict Database Access">
+    Only allow connections from trusted hosts:
+    ```sql
+    CREATE USER 'api_user'@'192.168.1.100' IDENTIFIED BY 'password';
+    ```
+  </Step>
+  
+  <Step title="Enable SSL/TLS">
+    For production, configure MySQL to use SSL/TLS connections:
+    ```javascript
+    export const pool = createPool({
+        // ... other config
+        ssl: {
+            ca: fs.readFileSync('/path/to/ca.pem')
+        }
+    });
+    ```
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Complete installation guide
+  </Card>
+  <Card title="Architecture" icon="diagram-project" href="/concepts/architecture">
+    Learn how configuration is used
+  </Card>
+  <Card title="Database Schema" icon="database" href="/concepts/database-schema">
+    Understand the database structure
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Handle connection errors
+  </Card>
+</CardGroup>

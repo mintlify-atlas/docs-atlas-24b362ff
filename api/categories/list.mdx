@@ -1,0 +1,66 @@
+---
+title: 'List Categories'
+api: 'GET /categories'
+description: 'Retrieve a list of all categories'
+---
+
+## Endpoint
+
+```
+GET /categories
+```
+
+Retrieves a complete list of all categories in the system. This endpoint does not require any parameters.
+
+## Parameters
+
+This endpoint does not accept any parameters.
+
+## Response
+
+<ResponseField name="error" type="boolean">
+  Indicates whether an error occurred during the request. Always `false` for successful requests.
+</ResponseField>
+
+<ResponseField name="categorieList" type="array">
+  An array containing all categories in the system.
+  
+  <Expandable title="Category Object">
+    <ResponseField name="id" type="integer">
+      The unique identifier for the category.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      The name of the category.
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp indicating when the category was created.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "error": false,
+  "categorieList": [
+    {
+      "id": 1,
+      "name": "bebidas",
+      "created_at": "2026-02-28T14:50:19.000Z"
+    },
+    {
+      "id": 2,
+      "name": "alfajores",
+      "created_at": "2026-02-28T15:03:53.000Z"
+    },
+    {
+      "id": 3,
+      "name": "galletas",
+      "created_at": "2026-02-28T15:04:00.000Z"
+    }
+  ]
+}
+```
